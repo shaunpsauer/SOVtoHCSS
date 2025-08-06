@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOV to HCSS Notes Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-chart-line"></i> SOV to HCSS Notes Converter</h1>
+        <p class="subtitle">Parse SOV, format, and group line items into HCSS activities</p>
+        
+        <div class="step-indicator">
+            <div class="step active" id="step1">
+                <span class="step-number">1</span>
+                <span>Configure & Upload</span>
+            </div>
+            <div class="step" id="step2">
+                <span class="step-number">2</span>
+                <span>Map Items to Activities</span>
+            </div>
+            <div class="step" id="step3">
+                <span class="step-number">3</span>
+                <span>Generate Output</span>
+            </div>
+        </div>
+        
+        <!-- Step 1: Configuration -->
+        <div id="configSection" class="config-section">
+            <div class="input-card">
+                <h3 class="card-title"><i class="fas fa-folder-open"></i> Project Information</h3>
+                
+                <div class="input-group">
+                    <label for="contractorSelect">Contractor:</label>
+                    <select id="contractorSelect">
+                        <option value="">-- Select Contractor --</option>
+                        <option value="UCCO">UCCO</option>
+                        <option value="Michels">Michels</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="dateInput">Note Date:</label>
+                    <input type="date" id="dateInput" value="">
+                </div>
+            </div>
+            
+            <div class="input-card">
+                <h3 class="card-title"><i class="fas fa-upload"></i> Upload SOV File</h3>
+                
+                <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #0090DA; margin-bottom: 15px;"></i>
+                    <p style="font-weight: 600; color: #333;">Drag & Drop Excel File</p>
+                    <p style="color: #666; font-size: 14px;">or click to browse</p>
+                    <p class="file-info" id="fileInfo" style="color: #999; font-size: 12px; margin-top: 10px;">Supports .xlsx, .xls files</p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+                </div>
+                
+                <div style="margin-top: 15px; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 13px;">
+                    <strong>Expected Format:</strong><br>
+                    • Main items: Rows 7-175 (Columns B, C, D, F, G)<br>
+                    • Pass-throughs: Starting row 177 (Columns A, B, F, G)<br>
+                    • Only includes items with non-zero "Contract Costs" values
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 2: Item Mapping -->
+        <div id="mappingSection" class="mapping-section">
+            <div class="mapping-header">
+                <div>
+                    <h3 style="margin: 0;"><i class="fas fa-sitemap"></i> Map SOV Items to Activities</h3>
+                    <p style="color: #666; font-size: 14px; margin-top: 5px;">Drag items from the left to activities on the right</p>
+                </div>
+                <div class="mapping-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Items:</span>
+                        <span class="stat-value" id="totalItemsCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Mapped:</span>
+                        <span class="stat-value" id="mappedItemsCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">SOV Total:</span>
+                        <span class="stat-value" id="totalValueCount">$0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mapping-container">
+                <div class="items-panel">
+                    <div class="panel-header">
+                        <h4 class="panel-title"><i class="fas fa-list-alt"></i> SOV Line Items</h4>
+                        <button onclick="addAllLineItems()" style="padding: 6px 12px; font-size: 13px;"><i class="fas fa-plus-circle"></i> Add All Line Items</button>
+                    </div>
+                    <div class="items-list" id="itemsList">
+                        <!-- Items will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="activities-panel">
+                    <div class="panel-header">
+                        <h4 class="panel-title"><i class="fas fa-tasks"></i> HCSS Activities</h4>
+                    </div>
+                    <div id="activitiesList">
+                        <!-- Default activities will be added based on project type -->
+                    </div>
+                    <button class="add-activity-btn" onclick="addActivity()"><i class="fas fa-plus"></i> Add New Activity</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 3: Output -->
+        <div id="outputSection" class="output-section">
+            <div class="output-grid">
+                <div class="preview-panel">
+                    <h4 class="preview-title"><i class="fas fa-chart-bar"></i> Activity Summary</h4>
+                    <div id="activitySummary">
+                        <!-- Summary will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="preview-panel">
+                    <h4 class="preview-title"><i class="fas fa-cogs"></i> Output Options</h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="separateActivities" checked>
+                            <span>Separate activities with dividers</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="includeGrandTotal" checked>
+                            <span>Include grand total</span>
+                        </label>
+                    </div>
+                    <button onclick="regenerateOutput()" style="width: 100%; margin-top: 15px;"><i class="fas fa-sync-alt"></i> Regenerate Output</button>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h4 style="margin-bottom: 10px;"><i class="fas fa-file-alt"></i> Formatted Output (99 char width)</h4>
+                <textarea id="outputText" readonly></textarea>
+                <span class="success-message" id="copySuccess"><i class="fas fa-check"></i> Copied to clipboard!</span>
+            </div>
+            
+            <div class="button-group" style="margin-top: 15px;">
+                <button onclick="copyToClipboard()"><i class="fas fa-copy"></i> Copy to Clipboard</button>
+                <button onclick="downloadNote()"><i class="fas fa-download"></i> Download as Text</button>
+                <button onclick="saveTemplate()"><i class="fas fa-save"></i> Save Activity Template</button>
+                <button onclick="exportMapping()"><i class="fas fa-file-export"></i> Export Mapping</button>
+            </div>
+        </div>
+        
+        <!-- Navigation Buttons -->
+        <div class="nav-buttons">
+            <button id="backBtn" onclick="previousStep()" style="display: none;"><i class="fas fa-arrow-left"></i> Back</button>
+            <button id="nextBtn" onclick="nextStep()" disabled>Next Step <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/file-handler.js"></script>
+    <script src="js/mapping.js"></script>
+    <script src="js/output.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
