@@ -198,7 +198,7 @@ function processFile() {
         // Look for the "Pass-Throughs" header or actual pass-through items
         if (description) {
             // Check if this is the "Pass-Throughs" header
-            if (description.toLowerCase().includes('pass-throughs')) {
+            if (typeof description === 'string' && description.toLowerCase().includes('pass-throughs')) {
                 console.log(`Found Pass-Throughs header at row ${row}`);
                 continue; // Skip the header row
             }
@@ -220,7 +220,7 @@ function processFile() {
                     lineNumber: row,
                     primeKey: itemNumber || `PT-${row}`,
                     pcoNumber: itemNumber || `PT-${row}`,
-                    description: description || `Pass-Through Item ${itemNumber || row}`,
+                    description: String(description) || `Pass-Through Item ${itemNumber || row}`,
                     contractValue: contractCost,
                     markup: markup || '',
                     thisBilling: 1, // Pass-throughs are typically billed as 1 unit
