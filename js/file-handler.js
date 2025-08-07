@@ -95,17 +95,32 @@ function processFile() {
         return;
     }
     
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    console.log('Processing sheet:', workbook.SheetNames[0]);
-    console.log('Sheet range:', firstSheet['!ref']);
-    console.log('Total cells in sheet:', Object.keys(firstSheet).filter(key => key !== '!ref').length);
+    // Look for the "Unit Breakdown" sheet specifically
+    const targetSheetName = "Unit Breakdown";
+    let targetSheet = null;
+    
+    console.log('Available sheets:', workbook.SheetNames);
+    
+    // Check if "Unit Breakdown" sheet exists
+    if (workbook.SheetNames.includes(targetSheetName)) {
+        targetSheet = workbook.Sheets[targetSheetName];
+        console.log(`Found target sheet: "${targetSheetName}"`);
+    } else {
+        console.error(`Sheet "${targetSheetName}" not found. Available sheets:`, workbook.SheetNames);
+        alert(`Sheet "${targetSheetName}" not found in the workbook. Please ensure your SOV file contains a sheet named "Unit Breakdown".`);
+        return;
+    }
+    
+    console.log('Processing sheet:', targetSheetName);
+    console.log('Sheet range:', targetSheet['!ref']);
+    console.log('Total cells in sheet:', Object.keys(targetSheet).filter(key => key !== '!ref').length);
     
     // Log sample data from different rows to understand structure
     console.log('Sample data from first 20 rows:');
     for (let row = 1; row <= 20; row++) {
         const rowData = {};
         for (let col = 'A'; col <= 'G'; col++) {
-            const cellValue = getCellValue(firstSheet, col, row);
+            const cellValue = getCellValue(targetSheet, col, row);
             if (cellValue !== null && cellValue !== undefined && cellValue !== '') {
                 rowData[col] = cellValue;
             }
@@ -126,13 +141,13 @@ function processFile() {
     // Process main section - look for data starting from row 6 (headers) and data from row 7
     // Based on the screenshot, columns are: A=Prime Key, B=Unit #, C=Description, D=Unit of Mea, E=Unit Cost, F=Estimated Quantity, G=Contract Cost
     for (let row = 7; row <= 200; row++) { // Check up to row 200
-        const primeKey = getCellValue(firstSheet, 'A', row);
-        const unitNumber = getCellValue(firstSheet, 'B', row);
-        const description = getCellValue(firstSheet, 'C', row);
-        const unitOfMeasure = getCellValue(firstSheet, 'D', row);
-        const unitCost = parseFloat(getCellValue(firstSheet, 'E', row) || 0);
-        const estimatedQty = parseFloat(getCellValue(firstSheet, 'F', row) || 0);
-        const contractCost = parseFloat(getCellValue(firstSheet, 'G', row) || 0);
+        const primeKey = getCellValue(targetSheet, 'A', row);
+        const unitNumber = getCellValue(targetSheet, 'B', row);
+        const description = getCellValue(targetSheet, 'C', row);
+        const unitOfMeasure = getCellValue(targetSheet, 'D', row);
+        const unitCost = parseFloat(getCellValue(targetSheet, 'E', row) || 0);
+        const estimatedQty = parseFloat(getCellValue(targetSheet, 'F', row) || 0);
+        const contractCost = parseFloat(getCellValue(targetSheet, 'G', row) || 0);
         
         // Log any row with data
         if (description || unitCost > 0 || contractCost > 0) {
@@ -183,10 +198,10 @@ function processFile() {
     // Columns: A=Item Number, B=Description, C=Description (same as B), F=Markup, G=Contract Cost
     console.log('Processing Pass-Throughs section...');
     for (let row = 180; row <= 350; row++) { // Expanded range to catch all pass-through items
-        const itemNumber = getCellValue(firstSheet, 'A', row);
-        const description = getCellValue(firstSheet, 'B', row) || getCellValue(firstSheet, 'C', row);
-        const markup = getCellValue(firstSheet, 'F', row);
-        const contractCost = parseFloat(getCellValue(firstSheet, 'G', row) || 0);
+        const itemNumber = getCellValue(targetSheet, 'A', row);
+        const description = getCellValue(targetSheet, 'B', row) || getCellValue(targetSheet, 'C', row);
+        const markup = getCellValue(targetSheet, 'F', row);
+        const contractCost = parseFloat(getCellValue(targetSheet, 'G', row) || 0);
         
         // Log all rows with any data to see what we're finding
         if (itemNumber || description || markup || contractCost > 0) {
@@ -219,7 +234,7 @@ function processFile() {
                     section: 'Pass-Through',
                     lineNumber: row,
                     primeKey: itemNumber || `PT-${row}`,
-                    pcoNumber: itemNumber || `PT-${row}`,
+                    ptNumber: itemNumber || `PT-${row}`,
                     description: String(description) || `Pass-Through Item ${itemNumber || row}`,
                     contractValue: contractCost,
                     markup: markup || '',
@@ -284,7 +299,7 @@ function displayItems() {
             itemHeader = `
                 <div class="item-header">
                     <span class="item-number">
-                        ${item.pcoNumber ? `PT #${item.pcoNumber}` : `Line ${item.lineNumber}`}
+                        ${item.ptNumber ? `PT #${item.ptNumber}` : `Line ${item.lineNumber}`}
                         <span class="pass-through-badge">PT</span>
                     </span>
                     <span class="item-amount">${formatCurrency(item.thisBillingValue)}</span>

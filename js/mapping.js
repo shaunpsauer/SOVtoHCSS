@@ -200,7 +200,7 @@ function addAllLineItems() {
             itemHeader = `
                 <div class="item-header">
                     <span class="item-number">
-                        ${item.pcoNumber ? `PT #${item.pcoNumber}` : `Line ${item.lineNumber}`}
+                        ${item.ptNumber ? `PT #${item.ptNumber}` : `Line ${item.lineNumber}`}
                         <span class="pass-through-badge">PT</span>
                     </span>
                     <span class="item-amount">${formatCurrency(item.thisBillingValue)}</span>
