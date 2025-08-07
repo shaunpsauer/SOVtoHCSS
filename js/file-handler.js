@@ -250,36 +250,50 @@ function processFile() {
     
     // Process PCOs section (Project Change Orders)
     console.log('Processing PCOs section...');
-    for (let row = 400; row <= 600; row++) { // Expanded range to catch all PCO items
-        const itemNumber = getCellValue(targetSheet, 'A', row);
-        const description = getCellValue(targetSheet, 'B', row) || getCellValue(targetSheet, 'C', row);
-        const unitOfMeasure = getCellValue(targetSheet, 'D', row);
-        const unitCost = parseFloat(getCellValue(targetSheet, 'E', row) || 0);
-        const estimatedQty = parseFloat(getCellValue(targetSheet, 'F', row) || 0);
-        const contractCost = parseFloat(getCellValue(targetSheet, 'G', row) || 0);
+    console.log('Searching rows 205-300 for PCO data...');
+    
+    for (let row = 205; row <= 300; row++) { // Correct range based on Excel structure
+        const pcoNumber = getCellValue(targetSheet, 'B', row); // PCO # is in column B
+        const description = getCellValue(targetSheet, 'C', row); // Description is in column C
+        const unitOfMeasure = getCellValue(targetSheet, 'D', row); // Unit of Mea is in column D
+        const unitCost = parseFloat(getCellValue(targetSheet, 'E', row) || 0); // Unit Cost is in column E
+        const estimatedQty = parseFloat(getCellValue(targetSheet, 'F', row) || 0); // Estimated Quantity is in column F
+        const contractCost = parseFloat(getCellValue(targetSheet, 'G', row) || 0); // Contract Cost is in column G
         
         // Log all rows with any data to see what we're finding
-        if (itemNumber || description || unitCost > 0 || estimatedQty > 0 || contractCost > 0) {
+        if (pcoNumber || description || unitCost > 0 || estimatedQty > 0 || contractCost > 0) {
             console.log(`Row ${row} PCO data:`, {
-                itemNumber, description, unitOfMeasure, unitCost, estimatedQty, contractCost
+                pcoNumber, description, unitOfMeasure, unitCost, estimatedQty, contractCost
             });
         }
         
-        // Look for the "PCOs" header or actual PCO items
+        // Look for the "Change Orders" header or actual PCO items
         if (description) {
-            // Check if this is the "PCOs" header
-            if (typeof description === 'string' && description.toLowerCase().includes('pco')) {
-                console.log(`Found PCOs header at row ${row}`);
+            // Check if this is the "Change Orders" header
+            if (typeof description === 'string' && description.toLowerCase().includes('change order')) {
+                console.log(`Found Change Orders header at row ${row}: "${description}"`);
                 continue; // Skip the header row
             }
             
-            // PCO detection: Has a description and either contract cost > 0 or (unit cost > 0 and quantity > 0)
+            // PCO detection: Has a PCO number and description and either contract cost > 0 or (unit cost > 0 and quantity > 0)
+            const hasPcoNumber = pcoNumber && !isNaN(parseInt(pcoNumber));
             const hasContractCost = contractCost > 0;
             const hasUnitCostAndQty = unitCost > 0 && estimatedQty > 0;
             
-            if (description && (hasContractCost || hasUnitCostAndQty)) {
+            console.log(`Row ${row} PCO check:`, {
+                description: description,
+                pcoNumber: pcoNumber,
+                hasPcoNumber: hasPcoNumber,
+                hasContractCost: hasContractCost,
+                hasUnitCostAndQty: hasUnitCostAndQty,
+                contractCost: contractCost,
+                unitCost: unitCost,
+                estimatedQty: estimatedQty
+            });
+            
+            if (description && hasPcoNumber && (hasContractCost || hasUnitCostAndQty)) {
                 console.log(`Found PCO item at row ${row}:`, {
-                    itemNumber, description, unitOfMeasure, unitCost, estimatedQty, contractCost
+                    pcoNumber, description, unitOfMeasure, unitCost, estimatedQty, contractCost
                 });
                 
                 // Calculate this billing value
@@ -298,13 +312,14 @@ function processFile() {
                 
                 // Only add if we have a valid billing value
                 if (thisBillingValue > 0) {
+                    console.log(`Adding PCO item with billing value: ${thisBillingValue}`);
                     sovItems.push({
                         id: ++itemId,
                         section: 'PCO',
                         lineNumber: row,
-                        primeKey: itemNumber || `PCO-${row}`,
-                        pcoNumber: itemNumber || `PCO-${row}`,
-                        description: String(description) || `PCO Item ${itemNumber || row}`,
+                        primeKey: pcoNumber || `PCO-${row}`,
+                        pcoNumber: pcoNumber || `PCO-${row}`,
+                        description: String(description) || `PCO Item ${pcoNumber || row}`,
                         unitOfMeasure: unitOfMeasure || '',
                         unitCost: unitCost,
                         estimatedQuantity: estimatedQty,
@@ -313,12 +328,16 @@ function processFile() {
                         thisBillingValue: thisBillingValue,
                         assigned: false
                     });
+                } else {
+                    console.log(`Skipping PCO row ${row} - no valid billing value calculated`);
                 }
             } else {
-                console.log(`Skipping PCO row ${row} - description: "${description}", contractCost: ${contractCost}, unitCost: ${unitCost}, qty: ${estimatedQty}`);
+                console.log(`Skipping PCO row ${row} - description: "${description}", pcoNumber: "${pcoNumber}", contractCost: ${contractCost}, unitCost: ${unitCost}, qty: ${estimatedQty}`);
             }
         }
     }
+    
+    console.log(`PCO processing complete. Found ${sovItems.filter(item => item.section === 'PCO').length} PCO items.`);
     
     // Update global reference after populating
     window.sovItems = sovItems;
