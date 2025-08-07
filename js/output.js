@@ -94,8 +94,9 @@ function formatOutput(contractor, date) {
     output.push('='.repeat(maxWidth));
     output.push('');
     
-    const separateActivities = document.getElementById('separateActivities').checked;
-    const includeGrandTotal = document.getElementById('includeGrandTotal').checked;
+    // Use default values instead of reading from removed checkboxes
+    const separateActivities = true; // Always separate activities
+    const includeGrandTotal = true; // Always include grand total
     
     let grandTotal = 0;
     
