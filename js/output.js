@@ -35,8 +35,10 @@ function generateActivitySummary() {
             if (item) {
                 activityTotal += item.thisBillingValue;
                 let itemDesc = '';
-                if (item.section === 'Pass-Through' && item.ptNumber) {
-                    itemDesc = `Pass-Through #${item.ptNumber}`;
+                if (item.section === 'Pass-Through' && item.pcoNumber) {
+                    itemDesc = `Pass-Through #${item.pcoNumber}`;
+                } else if (item.section === 'PCO' && item.pcoNumber) {
+                    itemDesc = `PCO #${item.pcoNumber}`;
                 } else {
                     // Use Unit # instead of line number
                     itemDesc = item.unit || `Line ${item.lineNumber}`;
@@ -124,9 +126,15 @@ function formatOutput(contractor, date) {
                 // Always include item details
                 let line = '';
                 if (item.section === 'Pass-Through') {
-                    line = item.ptNumber 
-                        ? `Pass-Through #${item.ptNumber}: ${item.description}`
+                    line = item.pcoNumber 
+                        ? `Pass-Through #${item.pcoNumber}: ${item.description}`
                         : `PT Line ${item.lineNumber}: ${item.description}`;
+                    line += ` | ${formatCurrency(item.thisBillingValue)}`;
+                } else if (item.section === 'PCO') {
+                    line = item.pcoNumber 
+                        ? `PCO #${item.pcoNumber}: ${item.description}`
+                        : `PCO Line ${item.lineNumber}: ${item.description}`;
+                    line += ` | Qty: ${item.thisBilling} ${item.unitOfMeasure || 'EA'}`;
                     line += ` | ${formatCurrency(item.thisBillingValue)}`;
                 } else {
                     // Use Unit # instead of line number

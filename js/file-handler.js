@@ -234,7 +234,7 @@ function processFile() {
                     section: 'Pass-Through',
                     lineNumber: row,
                     primeKey: itemNumber || `PT-${row}`,
-                    ptNumber: itemNumber || `PT-${row}`,
+                    pcoNumber: itemNumber || `PT-${row}`,
                     description: String(description) || `Pass-Through Item ${itemNumber || row}`,
                     contractValue: contractCost,
                     markup: markup || '',
@@ -244,6 +244,78 @@ function processFile() {
                 });
             } else {
                 console.log(`Skipping row ${row} - itemNumber: "${itemNumber}", contractCost: ${contractCost}`);
+            }
+        }
+    }
+    
+    // Process PCOs section (Project Change Orders)
+    console.log('Processing PCOs section...');
+    for (let row = 400; row <= 600; row++) { // Expanded range to catch all PCO items
+        const itemNumber = getCellValue(targetSheet, 'A', row);
+        const description = getCellValue(targetSheet, 'B', row) || getCellValue(targetSheet, 'C', row);
+        const unitOfMeasure = getCellValue(targetSheet, 'D', row);
+        const unitCost = parseFloat(getCellValue(targetSheet, 'E', row) || 0);
+        const estimatedQty = parseFloat(getCellValue(targetSheet, 'F', row) || 0);
+        const contractCost = parseFloat(getCellValue(targetSheet, 'G', row) || 0);
+        
+        // Log all rows with any data to see what we're finding
+        if (itemNumber || description || unitCost > 0 || estimatedQty > 0 || contractCost > 0) {
+            console.log(`Row ${row} PCO data:`, {
+                itemNumber, description, unitOfMeasure, unitCost, estimatedQty, contractCost
+            });
+        }
+        
+        // Look for the "PCOs" header or actual PCO items
+        if (description) {
+            // Check if this is the "PCOs" header
+            if (typeof description === 'string' && description.toLowerCase().includes('pco')) {
+                console.log(`Found PCOs header at row ${row}`);
+                continue; // Skip the header row
+            }
+            
+            // PCO detection: Has a description and either contract cost > 0 or (unit cost > 0 and quantity > 0)
+            const hasContractCost = contractCost > 0;
+            const hasUnitCostAndQty = unitCost > 0 && estimatedQty > 0;
+            
+            if (description && (hasContractCost || hasUnitCostAndQty)) {
+                console.log(`Found PCO item at row ${row}:`, {
+                    itemNumber, description, unitOfMeasure, unitCost, estimatedQty, contractCost
+                });
+                
+                // Calculate this billing value
+                let thisBillingValue = 0;
+                let thisBillingQty = 0;
+                
+                if (contractCost > 0) {
+                    // If contract cost is available, use it
+                    thisBillingValue = contractCost;
+                    thisBillingQty = estimatedQty > 0 ? estimatedQty : 1;
+                } else if (unitCost > 0 && estimatedQty > 0) {
+                    // If no contract cost but we have unit cost and quantity
+                    thisBillingValue = unitCost * estimatedQty;
+                    thisBillingQty = estimatedQty;
+                }
+                
+                // Only add if we have a valid billing value
+                if (thisBillingValue > 0) {
+                    sovItems.push({
+                        id: ++itemId,
+                        section: 'PCO',
+                        lineNumber: row,
+                        primeKey: itemNumber || `PCO-${row}`,
+                        pcoNumber: itemNumber || `PCO-${row}`,
+                        description: String(description) || `PCO Item ${itemNumber || row}`,
+                        unitOfMeasure: unitOfMeasure || '',
+                        unitCost: unitCost,
+                        estimatedQuantity: estimatedQty,
+                        contractValue: contractCost,
+                        thisBilling: thisBillingQty,
+                        thisBillingValue: thisBillingValue,
+                        assigned: false
+                    });
+                }
+            } else {
+                console.log(`Skipping PCO row ${row} - description: "${description}", contractCost: ${contractCost}, unitCost: ${unitCost}, qty: ${estimatedQty}`);
             }
         }
     }
@@ -283,7 +355,22 @@ function displayItems() {
             currentSection = item.section;
             const divider = document.createElement('div');
             divider.className = 'section-divider';
-            divider.textContent = currentSection === 'Pass-Through' ? 'Pass-Through Items' : 'Main Contract Items';
+            
+            // Set appropriate section title based on section type
+            let sectionTitle = '';
+            switch (item.section) {
+                case 'Pass-Through':
+                    sectionTitle = 'Pass-Through Items';
+                    break;
+                case 'PCO':
+                    sectionTitle = 'PCO Items';
+                    break;
+                default:
+                    sectionTitle = 'Main Contract Items';
+                    break;
+            }
+            
+            divider.textContent = sectionTitle;
             container.appendChild(divider);
         }
         
@@ -299,7 +386,7 @@ function displayItems() {
             itemHeader = `
                 <div class="item-header">
                     <span class="item-number">
-                        ${item.ptNumber ? `PT #${item.ptNumber}` : `Line ${item.lineNumber}`}
+                        ${item.pcoNumber ? `PT #${item.pcoNumber}` : `Line ${item.lineNumber}`}
                         <span class="pass-through-badge">PT</span>
                     </span>
                     <span class="item-amount">${formatCurrency(item.thisBillingValue)}</span>
@@ -308,6 +395,22 @@ function displayItems() {
                 <div class="item-details">
                     <span>Contract: ${formatCurrency(item.contractValue)}</span>
                     <span>Markup: ${item.markup || 'N/A'}</span>
+                </div>
+            `;
+        } else if (item.section === 'PCO') {
+            itemHeader = `
+                <div class="item-header">
+                    <span class="item-number">
+                        ${item.pcoNumber ? `PCO #${item.pcoNumber}` : `Line ${item.lineNumber}`}
+                        <span class="pco-badge">PCO</span>
+                    </span>
+                    <span class="item-amount">${formatCurrency(item.thisBillingValue)}</span>
+                </div>
+                <div class="item-description">${item.description}</div>
+                <div class="item-details">
+                    <span>Unit: ${item.unitOfMeasure || 'EA'}</span>
+                    <span>Qty: ${item.thisBilling}</span>
+                    <span>Rate: ${formatCurrency(item.unitCost)}</span>
                 </div>
             `;
         } else {
