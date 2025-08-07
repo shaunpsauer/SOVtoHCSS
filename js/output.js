@@ -33,7 +33,10 @@ function generateActivitySummary() {
             const itemId = parseInt(itemEl.dataset.itemId);
             const item = window.sovItems.find(i => i.id === itemId);
             if (item) {
-                activityTotal += item.thisBillingValue;
+                // Only add to activity total if it's not a PCO item
+                if (item.section !== 'PCO') {
+                    activityTotal += item.thisBillingValue;
+                }
                 let itemDesc = '';
                 if (item.section === 'Pass-Through' && item.pcoNumber) {
                     itemDesc = `Pass-Through #${item.pcoNumber}`;
@@ -121,7 +124,10 @@ function formatOutput(contractor, date) {
             const itemId = parseInt(itemEl.dataset.itemId);
             const item = window.sovItems.find(i => i.id === itemId);
             if (item) {
-                activityTotal += item.thisBillingValue;
+                // Only add to activity total if it's not a PCO item
+                if (item.section !== 'PCO') {
+                    activityTotal += item.thisBillingValue;
+                }
                 
                 // Always include item details
                 let line = '';

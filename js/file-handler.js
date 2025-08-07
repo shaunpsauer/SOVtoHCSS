@@ -457,7 +457,10 @@ function displayItems() {
 function updateStats() {
     const totalItems = window.sovItems.length;
     const mappedItems = window.sovItems.filter(item => item.assigned).length;
-    const totalValue = window.sovItems.reduce((sum, item) => sum + item.thisBillingValue, 0);
+    // Exclude PCO items from the total value calculation
+    const totalValue = window.sovItems
+        .filter(item => item.section !== 'PCO') // Exclude PCO items from grand total
+        .reduce((sum, item) => sum + item.thisBillingValue, 0);
     
     document.getElementById('totalItemsCount').textContent = totalItems;
     document.getElementById('mappedItemsCount').textContent = mappedItems;
