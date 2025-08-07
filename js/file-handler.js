@@ -218,13 +218,21 @@ function processFile() {
                 continue; // Skip the header row
             }
             
-            // More flexible pass-through detection:
-            // 1. Has a numeric item number OR
-            // 2. Has a description and contract cost > 0
-            const hasNumericItemNumber = itemNumber && !isNaN(parseInt(itemNumber));
-            const hasContractCost = contractCost > 0;
+            // Check if this is the "Change Orders" header (PCO section starts here)
+            if (typeof description === 'string' && description.toLowerCase().includes('change order')) {
+                console.log(`Found Change Orders header at row ${row} - stopping pass-through processing`);
+                break; // Stop processing pass-throughs when we hit the PCO section
+            }
             
-            if ((hasNumericItemNumber && hasContractCost) || (description && hasContractCost)) {
+            // More specific pass-through detection:
+            // 1. Must have a description that's not just a number
+            // 2. Must have a contract cost > 0
+            // 3. Must not be in the PCO section (rows 205+)
+            const hasValidDescription = description && typeof description === 'string' && description.trim().length > 0 && !/^\d+$/.test(description.trim());
+            const hasContractCost = contractCost > 0;
+            const isInPassThroughSection = row < 205; // PCO section starts at row 205
+            
+            if (hasValidDescription && hasContractCost && isInPassThroughSection) {
                 console.log(`Found pass-through item at row ${row}:`, {
                     itemNumber, description, markup, contractCost
                 });
@@ -243,7 +251,7 @@ function processFile() {
                     assigned: false
                 });
             } else {
-                console.log(`Skipping row ${row} - itemNumber: "${itemNumber}", contractCost: ${contractCost}`);
+                console.log(`Skipping row ${row} - itemNumber: "${itemNumber}", description: "${description}", contractCost: ${contractCost}, isInPassThroughSection: ${isInPassThroughSection}`);
             }
         }
     }
