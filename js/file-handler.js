@@ -29,14 +29,19 @@ function initializeFileHandling() {
 }
 
 function handleFileSelect(event) {
+    console.log('handleFileSelect called');
     const file = event.target.files[0];
+    console.log('File from input:', file);
     if (file) handleFile(file);
 }
 
 function handleFile(file) {
+    console.log('=== FILE UPLOAD DEBUG ===');
     console.log('File selected:', file.name, file.size, 'bytes');
+    console.log('File type:', file.type);
     
     if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        console.log('File is valid Excel format');
         selectedFile = file;
         window.selectedFile = selectedFile; // Update global reference
         document.getElementById('fileInfo').innerHTML = `<strong>✓ Loaded:</strong> ${file.name}`;
@@ -44,18 +49,34 @@ function handleFile(file) {
         document.getElementById('nextBtn').disabled = false;
         
         // Read file
+        console.log('Starting file read...');
         const reader = new FileReader();
         reader.onload = function(e) {
             console.log('File read successfully, size:', e.target.result.byteLength);
             const data = new Uint8Array(e.target.result);
-            workbook = XLSX.read(data, {type: 'array', cellDates: true});
-            console.log('Workbook created, sheets:', workbook.SheetNames);
+            try {
+                workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                console.log('Workbook created successfully');
+                console.log('Sheet names:', workbook.SheetNames);
+                
+                // Auto-process the file
+                setTimeout(() => {
+                    console.log('Auto-processing file...');
+                    processFile();
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error parsing workbook:', error);
+                alert('Error reading the Excel file. It might be corrupted or password protected.');
+            }
         };
         reader.onerror = function(e) {
             console.error('Error reading file:', e);
+            alert('Error reading the file. Please try again.');
         };
         reader.readAsArrayBuffer(file);
     } else {
+        console.log('File is not valid Excel format');
         alert('Please select a valid Excel file (.xlsx or .xls)');
     }
 }
@@ -67,6 +88,8 @@ function isFileSelected() {
 
 // Process Excel File with specific SOV format
 function processFile() {
+    console.log('=== PROCESS FILE DEBUG ===');
+    
     if (!workbook) {
         console.error('No workbook available');
         return;
@@ -74,14 +97,18 @@ function processFile() {
     
     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
     console.log('Processing sheet:', workbook.SheetNames[0]);
+    console.log('Sheet range:', firstSheet['!ref']);
+    console.log('Total cells in sheet:', Object.keys(firstSheet).filter(key => key !== '!ref').length);
     
-    // Log some sample data to understand the structure
-    console.log('Sample cell data:');
-    for (let row = 1; row <= 10; row++) {
+    // Log sample data from different rows to understand structure
+    console.log('Sample data from first 20 rows:');
+    for (let row = 1; row <= 20; row++) {
         const rowData = {};
         for (let col = 'A'; col <= 'G'; col++) {
             const cellValue = getCellValue(firstSheet, col, row);
-            if (cellValue) rowData[col] = cellValue;
+            if (cellValue !== null && cellValue !== undefined && cellValue !== '') {
+                rowData[col] = cellValue;
+            }
         }
         if (Object.keys(rowData).length > 0) {
             console.log(`Row ${row}:`, rowData);
