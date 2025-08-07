@@ -465,12 +465,27 @@ function displayItems() {
 function updateStats() {
     const totalItems = window.sovItems.length;
     const mappedItems = window.sovItems.filter(item => item.assigned).length;
-    // Exclude PCO items from the total value calculation
-    const totalValue = window.sovItems
-        .filter(item => item.section !== 'PCO') // Exclude PCO items from grand total
+    
+    // Calculate subtotals for each section
+    const mainContractSubtotal = window.sovItems
+        .filter(item => item.section === 'Main')
         .reduce((sum, item) => sum + item.thisBillingValue, 0);
+    
+    const passThroughSubtotal = window.sovItems
+        .filter(item => item.section === 'Pass-Through')
+        .reduce((sum, item) => sum + item.thisBillingValue, 0);
+    
+    const pcoSubtotal = window.sovItems
+        .filter(item => item.section === 'PCO')
+        .reduce((sum, item) => sum + item.thisBillingValue, 0);
+    
+    // SOV Total is the sum of all three subtotals
+    const totalValue = mainContractSubtotal + passThroughSubtotal + pcoSubtotal;
     
     document.getElementById('totalItemsCount').textContent = totalItems;
     document.getElementById('mappedItemsCount').textContent = mappedItems;
+    document.getElementById('mainContractSubtotal').textContent = formatCurrency(mainContractSubtotal);
+    document.getElementById('passThroughSubtotal').textContent = formatCurrency(passThroughSubtotal);
+    document.getElementById('pcoSubtotal').textContent = formatCurrency(pcoSubtotal);
     document.getElementById('totalValueCount').textContent = formatCurrency(totalValue);
 } 
