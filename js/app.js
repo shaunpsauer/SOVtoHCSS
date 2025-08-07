@@ -1,5 +1,9 @@
-// Main Application Module
+// App Module
+console.log('App module loaded');
+
+// Step Management
 let currentStep = 1;
+const totalSteps = 3;
 
 // Initialize the application
 function initializeApp() {
