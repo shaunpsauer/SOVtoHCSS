@@ -6,7 +6,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: linear-gradient(135deg, #00A5DF 0%, #19335E 100%);
+    background: linear-gradient(135deg, #00A5DF 0%, #19335E 150%);
     min-height: 100vh;
     padding: 20px;
 }
@@ -54,7 +54,7 @@ h1 {
 }
 
 .step.active {
-    background: linear-gradient(135deg, #00A5DF 0%, #19335E 100%);
+    background: linear-gradient(135deg, #00A5DF 0%, #19335E 175%);
     color: white;
     transform: scale(1.05);
 }
@@ -254,7 +254,7 @@ select:focus, input:focus {
 }
 
 .section-divider {
-    background: linear-gradient(135deg, #00A5DF 0%, #19335E 100%);
+    background: linear-gradient(135deg, #00A5DF 0%, #19335E 175%);
     color: white;
     padding: 8px 12px;
     margin: 10px 0;
@@ -331,7 +331,7 @@ select:focus, input:focus {
 }
 
 .activity-header {
-    background: linear-gradient(135deg, #00A5DF 0%, #19335E 100%);
+    background: linear-gradient(135deg, #00A5DF 0%, #19335E 175%);
     color: white;
     padding: 12px;
     display: flex;
