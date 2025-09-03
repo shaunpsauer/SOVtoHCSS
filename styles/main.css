@@ -13,7 +13,7 @@ body {
 
 .container {
     background: white;
-    border-radius: 20px;
+    border-radius: 10px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     max-width: 1400px;
     margin: 0 auto;
@@ -84,7 +84,7 @@ h1 {
 /* Step 1: Configuration */
 .config-section {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /*grid-template-columns: 1fr 1fr;*/
     gap: 30px;
     margin-bottom: 30px;
 }
