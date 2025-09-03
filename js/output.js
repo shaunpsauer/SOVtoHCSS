@@ -81,12 +81,17 @@ function generateActivitySummary() {
 }
 
 function formatOutput(contractor, date) {
-    const maxWidth = 99;
+    const maxWidth = 95;
     let output = [];
     
     // Format date
     const dateObj = new Date(date);
-    const formattedDate = `${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
+    const formattedDate = dateObj.toLocaleDateString("en-us", {
+        timeZone: 'UTC',
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+    });
     
     // Header
     output.push('='.repeat(maxWidth));
@@ -219,53 +224,3 @@ function downloadNote() {
     a.click();
     URL.revokeObjectURL(url);
 }
-
-function saveTemplate() {
-    const template = {
-        activities: []
-    };
-    
-    document.querySelectorAll('.activity-group').forEach(group => {
-        const name = group.querySelector('.activity-name-input').value;
-        if (name) template.activities.push(name);
-    });
-    
-    const blob = new Blob([JSON.stringify(template, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'activity_template.json';
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-function exportMapping() {
-    const mapping = {
-        contractor: document.getElementById('contractorSelect').value,
-        date: document.getElementById('dateInput').value,
-        activities: {}
-    };
-    
-    document.querySelectorAll('.activity-group').forEach(group => {
-        const name = group.querySelector('.activity-name-input').value;
-        const items = [];
-        
-        group.querySelectorAll('.activity-items .sov-item').forEach(itemEl => {
-            const itemId = parseInt(itemEl.dataset.itemId);
-            const item = window.sovItems.find(i => i.id === itemId);
-            if (item) items.push(item);
-        });
-        
-        if (items.length > 0) {
-            mapping.activities[name] = items;
-        }
-    });
-    
-    const blob = new Blob([JSON.stringify(mapping, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `SOV_Mapping_${mapping.contractor}_${mapping.date}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-} 
